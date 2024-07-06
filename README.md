@@ -18,7 +18,7 @@ $$
 where $\odot$ denotes the element-wise (i.e., Hadamard) product. In the following left group of figures we set $\lambda_w=0.4$ and in the right group $\lambda_w=0.04$. 
 
 <p align="center">
-<img src="/images/squared_static_example.png" width="500" height="350"> <img src="/images/squared_static_example_high_SNR.png" width="500" height="350">
+<img src="/images/squared_static_example.png" width="450" height="350"> <img src="/images/squared_static_example_high_SNR.png" width="450" height="350">
 </p>
 
 
