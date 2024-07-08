@@ -96,7 +96,7 @@ We extend the previous example to the dynamic setting by introducing an update l
 
 
 <p align="center">
-<img src="/images/dynamic_particles_all.png" width="1000" height="400">
+<img src="/images/dynamic_particles_all.png" width="800" height="500">
 </p>
 
 Please consider reading the paper for further details on this example. Also, please consider citing our paper if you find this repository useful for your publication.
