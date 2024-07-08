@@ -15,10 +15,10 @@ $$
 \end{aligned}
 $$
 
-where $\odot$ denotes the element-wise (i.e., Hadamard) product. In the following left group of figures we set $\lambda_w=0.4$ and in the right group $\lambda_w=0.04$. 
+where $\odot$ denotes the element-wise (i.e., Hadamard) product. In the following left group of figures, we set $\lambda_w=0.4$ and in the right group $\lambda_w=0.04$. 
 
 <p align="center">
-<img src="/images/squared_static_example.png" width="500" height="350"> <img src="/images/squared_static_example_high_SNR.png" width="500" height="350">
+<img src="/images/squared_static_example.png" width="450" height="350"> <img src="/images/squared_static_example_high_SNR.png" width="450" height="350">
 </p>
 
 
@@ -71,11 +71,15 @@ for $n=9$ where $X_0 \sim \mathcal{N}(\mu_0,\sigma_0^2I_n)$ and we choose the co
 
 
 <p align="center">
-<img src="/images/states_L96.png" width="500" height="350"><img src="/images/mse_L96.png" width="500" height="350">
+<img src="/images/states_L96.png" width="450" height="350"><img src="/images/mse_L96.png" width="450" height="350">
 </p>
 
 
 ## 5. Static image in-painting on MNIST
+Consider the problem of computing conditional distributions on the $100$-dimensional latent space of generative adversarial network (GAN) trained to represent the MNIST digits. In particular, denoting the generator by $G : \mathbb{R}^{100}\rightarrow \mathbb{R}^{28\times 28}$, we consider the model:
+$$Y_t = h(G(X),c_t) + \sigma W_t,\quad X\sim N(0,I_{100}),$$
+
+where the observation function $(z,c) \in \mathbb{R}^{28\times 28} \times \mathbb R^2 \mapsto h(z,c)\in \mathbb{R}^{r\times r}$ is defined as the $r\times r$ window of pixels $z[c(1):c(1)+r,c(2):c(2)+r]$. The coordinates of the corner $c_t$ moves from left to right and top to bottom scanning a partial portion of the image called  the {\it observed part}. In order to make the problem more challenging, we fed a noisy measurement of the corner location to the algorithms. While the true image does not change, we included artificial Gaussian noise to the particles to avoid particle collapse.
 
 ## 6. Dynamic image in-painting on MNIST
 
