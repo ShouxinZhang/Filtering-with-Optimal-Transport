@@ -89,8 +89,15 @@ where the observation function $(z,c) \in \mathbb{R}^{28\times 28} \times \mathb
 <p align="center">
 <img src="/images/MNIST_static_OT_particles_example.png" width="500" height="400"><img src="/images/MNIST_static_dist_particles_example.png" width="500" height="400">
 </p>
+
 ## 6. Dynamic image in-painting on MNIST
 
+We extend the previous example to the dynamic setting by introducing an update law for the latent variable of the GAN according to $X_{t+1} = (1-\alpha)X_{t} + \lambda V_t$, where $V_t$ is a standard Gaussian random variable. We consider the same observation model but we select a larger window size $r=12$ and constrain the the vertical coordinate of the window to be at the bottom, while the horizontal coordinate is randomly selected. 
+
+
+<p align="center">
+<img src="/images/dynamic_particles_all.png" width="1000" height="400">
+</p>
 
 Please consider reading the paper for further details on this example. Also, please consider citing our paper if you find this repository useful for your publication.
 
