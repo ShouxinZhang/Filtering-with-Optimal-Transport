@@ -87,7 +87,7 @@ where the observation function $(z,c) \in \mathbb{R}^{28\times 28} \times \mathb
 </p>
 
 <p align="center">
-<img src="/images/MNIST_static_OT_particles_example.png" width="1000" height="400">
+<img src="/images/MNIST_static_OT_particles_example.png" width="500" height="400"><img src="/images/MNIST_static_dist_particles_example.png" width="500" height="400">
 </p>
 ## 6. Dynamic image in-painting on MNIST
 
