@@ -116,7 +116,7 @@ We extend the previous example to the dynamic setting by introducing an update l
 
 To reproduce these figures, in the "Dynamic MNIST" folder, run "main.py" file to create the data file and run "import_DATA.py" file to plot the figures. More details in the README.txt file in the folder.  
 
-
+## 
 Please consider reading the paper for further details on this example. Also, please consider citing our paper if you find this repository useful for your publication.
 
 ```
