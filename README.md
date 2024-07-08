@@ -21,6 +21,7 @@ where $\odot$ denotes the element-wise (i.e., Hadamard) product. In the followin
 <img src="/images/squared_static_example.png" width="450" height="350"> <img src="/images/squared_static_example_high_SNR.png" width="450" height="350">
 </p>
 
+To reproduce these figures, in the "Static Example" folder, run "static_example.py" file with more details in the README.txt file in the folder.  
 
 ## 2. A bimodal dynamic example
 We consider a dynamic version of the previous example according to the following model:
@@ -39,6 +40,7 @@ will once again lead to a bimodal posterior $\pi_t$ at every time step.
 <img src="/images/xx_states.png" width="250" height="250"><img src="/images/xx_mmd.png" width="250" height="250"><img src="/images/dynamic_example_d_vs_mmd.png" width="250" height="250"><img src="/images/dynamic_example_N_vs_mmd.png" width="250" height="250">
 </p>
 
+To reproduce these figures, in the "Dynamic Example" folder, run "main.py" file to create the data file and run "import_DATA.py" file to plot the figures. More details in the README.txt file in the folder.  
 
 ## 3. The Lorenz 63 model
 We consider the three-dimensional  Lorenz 63 model which often serves as a benchmark for nonlinear filtering algorithms. The
@@ -47,6 +49,10 @@ state $X_t$ is $3$-dimensional while the observation $Y_t$ is $2$-dimensional an
 <p align="center">
 <img src="/images/state2_and_mse_L63.png" width="750" height="350">
 </p>
+
+
+To reproduce these figures, in the "Lorenz 63" folder, run "main.py" file to create the data file and run "import_DATA.py" file to plot the figures. More details in the README.txt file in the folder.  
+
 
 ## 4. The Lorenz 96 model
 Consider the following Lorenz-96 model:
@@ -74,6 +80,10 @@ for $n=9$ where $X_0 \sim \mathcal{N}(\mu_0,\sigma_0^2I_n)$ and we choose the co
 <img src="/images/states_L96.png" width="450" height="350"><img src="/images/mse_L96.png" width="450" height="350">
 </p>
 
+
+To reproduce these figures, in the "Lorenz 96" folder, run "main.py" file to create the data file and run "import_DATA.py" file to plot the figures. More details in the README.txt file in the folder.  
+
+
 ## 5. Static image in-painting on MNIST
 Consider the problem of computing conditional distributions on the $100$-dimensional latent space of generative adversarial network (GAN) trained to represent the MNIST digits. In particular, denoting the generator by $G : \mathbb{R}^{100}\rightarrow \mathbb{R}^{28\times 28}$, we consider the model:
 $$Y_t = h(G(X),c_t) + \sigma W_t,\quad X\sim N(0,I_{100}),$$
@@ -90,6 +100,10 @@ where the observation function $(z,c) \in \mathbb{R}^{28\times 28} \times \mathb
 <img src="/images/MNIST_static_OT_particles_example.png" width="500" height="400"><img src="/images/MNIST_static_dist_particles_example.png" width="500" height="400">
 </p>
 
+
+To reproduce these figures, in the "Static MNIST" folder, run "main.py" file to create the data file and run "import_DATA.py" file to plot the figures. More details in the README.txt file in the folder.  
+
+
 ## 6. Dynamic image in-painting on MNIST
 
 We extend the previous example to the dynamic setting by introducing an update law for the latent variable of the GAN according to $X_{t+1} = (1-\alpha)X_{t} + \lambda V_t$, where $V_t$ is a standard Gaussian random variable. We consider the same observation model but we select a larger window size $r=12$ and constrain the the vertical coordinate of the window to be at the bottom, while the horizontal coordinate is randomly selected. 
@@ -98,6 +112,10 @@ We extend the previous example to the dynamic setting by introducing an update l
 <p align="center">
 <img src="/images/dynamic_particles_all.png" width="800" height="500">
 </p>
+
+
+To reproduce these figures, in the "Dynamic MNIST" folder, run "main.py" file to create the data file and run "import_DATA.py" file to plot the figures. More details in the README.txt file in the folder.  
+
 
 Please consider reading the paper for further details on this example. Also, please consider citing our paper if you find this repository useful for your publication.
 
