@@ -6,10 +6,21 @@ import matplotlib
 from torch.optim.lr_scheduler import MultiStepLR, StepLR, MultiplicativeLR, ExponentialLR
 from torch.distributions.multivariate_normal import MultivariateNormal
 import sys
+import time
 
 plt.rc('font', size=13)          # controls default text sizes
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
+
+# Check both CPU and GPU availability
+has_cuda = torch.cuda.is_available()
+print(f"CUDA Available: {has_cuda}")
+if has_cuda:
+    print(f"GPU: {torch.cuda.get_device_name(0)}")
+
+# You can manually switch between 'cpu' and 'cuda' here
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(f"Using device: {device}")
 
 class f_nn(torch.nn.Module):
     def __init__(self, x_dim, y_dim, hidden_dim):
@@ -120,13 +131,13 @@ def train(f,T,X,Y,ITERS,LR,BATCH_SIZE):
     optimizer_f = torch.optim.Adam(f.parameters(), lr=LR/1)
     scheduler_f = ExponentialLR(optimizer_f, gamma=0.999) #set LR = 1e-1
     scheduler_T = ExponentialLR(optimizer_T, gamma=0.999) #set LR = 1e-1
-    Y_ = Y[torch.randperm(Y.shape[0])].view(Y.shape)
+    Y_ = Y[torch.randperm(Y.shape[0], device=Y.device)].reshape(Y.shape)
     inner_iterations = 10
     for i in range(ITERS):
-        idx = torch.randperm(X.shape[0])[:BATCH_SIZE]
+        idx = torch.randperm(X.shape[0], device=X.device)[:BATCH_SIZE]
         X_train = X[idx].clone().detach()
         Y_train = Y[idx].clone().detach()
-        Y_shuffled = Y_train[torch.randperm(Y_train.shape[0])].view(Y_train.shape)
+        Y_shuffled = Y_train[torch.randperm(Y_train.shape[0], device=Y_train.device)].reshape(Y_train.shape)
         for j in range(inner_iterations):
             T_XY = T.forward(X_train,Y_shuffled)
             f_T = f.forward(T_XY,Y_shuffled) 
@@ -163,7 +174,6 @@ def train(f,T,X,Y,ITERS,LR,BATCH_SIZE):
 #%%
 N = 1000
 NN = [100,500]
-
 L = 2
 dy = 2
 
@@ -191,17 +201,17 @@ if experiment == "linear":
     def h(x):
         return x
     
-    X = sigma*torch.randn(N,dy) + 2*torch.randint(2,(N,dy))-1
-    Y =  X + sigma_w*torch.randn(N,dy)
+    X = sigma*torch.randn(N,dy, device=device) + 2*torch.randint(0,2,(N,dy), device=device).float()-1
+    Y =  X + sigma_w*torch.randn(N,dy, device=device)
 
 if experiment == "squared":
-    X =  torch.randn(N,L) 
+    X =  torch.randn(N,L, device=device) 
     def h(x):
 # =============================================================================
 #         return 0.5*x[:,0]*x[:,0]
 # =============================================================================
         return 0.5*x*x
-    Y = h(X).view(-1,dy) + sigma_w*torch.randn(N,dy)
+    Y = h(X).view(-1,dy) + sigma_w*torch.randn(N,dy, device=device)
 
 gamma = sigma_w    
 
@@ -209,8 +219,8 @@ gamma = sigma_w
 num_neurons = 32
 
 
-f  = f_nn(L, dy, num_neurons)
-T = T_map(L,dy,num_neurons)
+f  = f_nn(L, dy, num_neurons).to(device)
+T = T_map(L,dy,num_neurons).to(device)
 f.apply(init_weights)
 T.apply(init_weights)     
 #with torch.no_grad():
@@ -219,21 +229,34 @@ T.apply(init_weights)
 ITERS = int(2*1e4)
 BATCH_SIZE = 128
 LR = 1e-3
+
+print(f"\n{'='*60}")
+print(f"Starting training on {device}")
+print(f"{'='*60}")
+start_time = time.time()
+
 train(f,T,X,Y,ITERS,LR,BATCH_SIZE)
+
+end_time = time.time()
+training_time = end_time - start_time
+print(f"\n{'='*60}")
+print(f"Training completed on {device}")
+print(f"Total training time: {training_time:.2f} seconds ({training_time/60:.2f} minutes)")
+print(f"{'='*60}\n")
 
 #%%
 plt.figure(figsize = (20, 7.2))
 grid = plt.GridSpec(3, 4, wspace =0.2, hspace = 0.2)
 
-Y_shuffled = Y[torch.randperm(Y.shape[0])].view(Y.shape)
-x_plot = T.forward(X,Y_shuffled).detach().numpy()
-y_plot = Y_shuffled.numpy()
+Y_shuffled = Y[torch.randperm(Y.shape[0], device=Y.device)].reshape(Y.shape)
+x_plot = T.forward(X,Y_shuffled).detach().cpu().numpy()
+y_plot = Y_shuffled.detach().cpu().numpy()
 
 plt.subplot(grid[1:, 0])
 # =============================================================================
 # plt.figure(figsize=(8,6))
 # =============================================================================
-plt.plot(X[:,0].numpy(),Y[:,0].numpy(),marker='o',ms=5,ls='none',label=r'$P_{XY}$')
+plt.plot(X[:,0].detach().cpu().numpy(),Y[:,0].detach().cpu().numpy(),marker='o',ms=5,ls='none',label=r'$P_{XY}$')
 plt.plot(x_plot[:,0],y_plot[:,0],marker='o',ms=5,ls='none',label = r"$S{\#}P_X \otimes P_Y$" , alpha = 0.5)
 plt.xlabel(r'$X$')
 plt.ylabel(r'$Y$')
@@ -284,7 +307,7 @@ plt.subplot(grid[0, 0])
 # plt.subplot(1,2,1)
 # =============================================================================
 plt.plot(xx,px,label=r"$P_X$")
-plt.hist(X[:,0].numpy(),bins=24,density=True,label=r"$X^i$", alpha = 0.5)
+plt.hist(X[:,0].detach().cpu().numpy(),bins=24,density=True,label=r"$X^i$", alpha = 0.5)
 plt.legend(loc = 2)
 ax = plt.gca()
 ax.get_xaxis().set_visible(False)
@@ -305,8 +328,8 @@ plt.subplot(grid[1, -1])
 # plt.subplot(1,2,2)
 # =============================================================================
 plt.plot(xx,pxy,'k')#,label=r"$P_{X|Y=1}$")
-X_OT = T.forward(X,y*torch.ones(N,dy))
-plt.hist(X_OT.detach().numpy()[:,0],bins=bins,color='r',density=True,label=r"OT", alpha = 0.5)
+X_OT = T.forward(X,torch.full((N,dy), y, device=device))
+plt.hist(X_OT.detach().cpu().numpy()[:,0],bins=bins,color='r',density=True,label=r"OT", alpha = 0.5)
 
 
 # =============================================================================
@@ -322,28 +345,28 @@ plt.xlim([-x_lim,x_lim])
 #%%
   
 y_hat = h(X).view(-1,dy)
-eta_EnKF = np.random.multivariate_normal(np.zeros(dy),gamma*gamma * np.eye(dy),N)    
+eta_EnKF = torch.randn(N, dy, device=device) * gamma   
 y_hatEnKF = y_hat + eta_EnKF
 
-m_hatEnKF = X.mean(axis=0)
+m_hatEnKF = X.mean(dim=0)
 
 #o_hatEnKF = (x_hatEnKF**3).mean(axis=1)
-o_hatEnKF = (y_hat).mean(axis=0)
+o_hatEnKF = (y_hat).mean(dim=0)
 
 a = (X - m_hatEnKF)
 
 #b = ((x_hatEnKF**3).transpose() - o_hatEnKF)
 b = (y_hat - o_hatEnKF)
 
-C_hat_vh = ((a.T@b)/N).view(L,dy)
-C_hat_hh = ((b.T@b)/N).view(dy,dy)
-K_EnKF = np.matmul(C_hat_vh,np.linalg.inv(C_hat_hh + np.eye(dy)*gamma*gamma))
+C_hat_vh = (a.T @ b) / N
+C_hat_hh = (b.T @ b) / N
+K_EnKF = C_hat_vh @ torch.linalg.inv(C_hat_hh + torch.eye(dy, device=device)*(gamma*gamma))
   
-X_EnKF = X + (y*torch.ones(N,dy) - y_hatEnKF) @ K_EnKF.T
+X_EnKF = X + (torch.full((N,dy), y, device=device) - y_hatEnKF) @ K_EnKF.T
 
 plt.subplot(grid[0, -1])
 plt.plot(xx,pxy,'k')#,label=r"$P_{X|Y=1}$")
-plt.hist(X_EnKF.detach().numpy()[:,0],bins=bins,color='g',density=True,label=r"EnKF", alpha = 0.5)
+plt.hist(X_EnKF.detach().cpu().numpy()[:,0],bins=bins,color='g',density=True,label=r"EnKF", alpha = 0.5)
 plt.title('N = {}'.format(N))
 # =============================================================================
 # plt.hist(X[:,0],bins=24,density=True,label=r"$X_0$", alpha = 0.5)
@@ -362,25 +385,25 @@ plt.xlim([-x_lim,x_lim])
 
 
 #%% SIR
-rng = np.random.default_rng()
 
-X_SIR = X #+ torch.randn(N,L) 
+X_SIR = X.clone() #+ torch.randn(N,L) 
 y_hat = h(X_SIR).view(-1,dy)
 
-W = torch.sum((y*torch.ones(N,dy) - y_hat)*(y*torch.ones(N,dy) - y_hat),1)/(2*gamma*gamma)
+innovation = torch.full((N,dy), y, device=device) - y_hat
+W = torch.sum(innovation*innovation,dim=1)/(2*gamma*gamma)
 #print(W)
 W = W - torch.min(W)
-weight = torch.exp(-W).T
+weight = torch.exp(-W)
 #weight = np.exp(-np.sum((y[i+1,] - h(x_SIR[k,i+1,]).T)*(y[i+1] - h(x_SIR[k,i+1,]).T),axis=1)/(2*gamma*gamma)).T
 #W[k,i+1,] = weight/np.sum(weight)
 weight = weight/torch.sum(weight)
 #x_SIR[k,i+1,0,] = rng.choice(x_SIR[k,i+1,0,], J, p = W[k,i+1,0,])
-index = rng.choice(np.arange(N), N, p = weight.detach().numpy())
+index = torch.multinomial(weight, N, replacement=True)
 X_sir = X_SIR[index,:]
 
 plt.subplot(grid[2, -1])
 plt.plot(xx,pxy,'k')#,label=r"$P_{X|Y=1}$")
-plt.hist(X_sir.detach().numpy()[:,0],bins=bins,density=True,color='b',label=r"SIR", alpha = 0.5)
+plt.hist(X_sir.detach().cpu().numpy()[:,0],bins=bins,density=True,color='b',label=r"SIR", alpha = 0.5)
 plt.xlabel('X')
 # =============================================================================
 # plt.hist(X[:,0],bins=24,density=True,label=r"$X_0$", alpha = 0.5)
@@ -406,41 +429,41 @@ for i in range(len(NN)):
         def h(x):
             return x
         
-        X = sigma*torch.randn(N,dy) + 2*torch.randint(2,(N,dy))-1
-        Y =  X + sigma_w*torch.randn(N,dy)
+        X = sigma*torch.randn(N,dy, device=device) + 2*torch.randint(0,2,(N,dy), device=device).float()-1
+        Y =  X + sigma_w*torch.randn(N,dy, device=device)
     
     if experiment == "squared":
-        X =  torch.randn(N,L) 
+        X =  torch.randn(N,L, device=device) 
         def h(x):
     # =============================================================================
     #         return 0.5*x[:,0]*x[:,0]
     # =============================================================================
             return 0.5*x*x
-        Y = h(X).view(-1,dy) + sigma_w*torch.randn(N,dy)
+        Y = h(X).view(-1,dy) + sigma_w*torch.randn(N,dy, device=device)
     
     
-    Y_shuffled = Y[torch.randperm(Y.shape[0])].view(Y.shape)
+    Y_shuffled = Y[torch.randperm(Y.shape[0], device=Y.device)].reshape(Y.shape)
     
     ###############################################################################
     y_hat = h(X).view(-1,dy)
-    eta_EnKF = np.random.multivariate_normal(np.zeros(dy),gamma*gamma * np.eye(dy),N)    
+    eta_EnKF = torch.randn(N, dy, device=device) * gamma   
     y_hatEnKF = y_hat + eta_EnKF
     
-    m_hatEnKF = X.mean(axis=0)
+    m_hatEnKF = X.mean(dim=0)
     
     #o_hatEnKF = (x_hatEnKF**3).mean(axis=1)
-    o_hatEnKF = (y_hat).mean(axis=0)
+    o_hatEnKF = (y_hat).mean(dim=0)
     
     a = (X - m_hatEnKF)
     
     #b = ((x_hatEnKF**3).transpose() - o_hatEnKF)
     b = (y_hat - o_hatEnKF)
     
-    C_hat_vh = ((a.T@b)/N).view(L,dy)
-    C_hat_hh = ((b.T@b)/N).view(dy,dy)
-    K_EnKF = np.matmul(C_hat_vh,np.linalg.inv(C_hat_hh + np.eye(dy)*gamma*gamma))
+    C_hat_vh = (a.T @ b) / N
+    C_hat_hh = (b.T @ b) / N
+    K_EnKF = C_hat_vh @ torch.linalg.inv(C_hat_hh + torch.eye(dy, device=device)*(gamma*gamma))
       
-    X_EnKF = X + (y*torch.ones(N,dy) - y_hatEnKF) @ K_EnKF.T
+    X_EnKF = X + (torch.full((N,dy), y, device=device) - y_hatEnKF) @ K_EnKF.T
     
     plt.subplot(grid[0, i+1])
     if i==0:
@@ -448,7 +471,7 @@ for i in range(len(NN)):
         plt.legend(loc = loc)
     else:
         plt.plot(xx,pxy,'k')#,label=r"$P_{X|Y=1}$")
-    plt.hist(X_EnKF.detach().numpy()[:,0],bins=bins,color='g',density=True,label=r"EnKF", alpha = 0.5)
+    plt.hist(X_EnKF.detach().cpu().numpy()[:,0],bins=bins,color='g',density=True,label=r"EnKF", alpha = 0.5)
     plt.title('N = {}'.format(N))
     if i==0:
         plt.legend(loc = loc)
@@ -464,8 +487,8 @@ for i in range(len(NN)):
     plt.xlim([-x_lim,x_lim])
     
     ###############################################################################
-    f  = f_nn(L, dy, num_neurons)
-    T = T_map(L,dy,num_neurons)
+    f  = f_nn(L, dy, num_neurons).to(device)
+    T = T_map(L,dy,num_neurons).to(device)
     f.apply(init_weights)
     T.apply(init_weights)     
     train(f,T,X,Y,ITERS,LR,BATCH_SIZE)
@@ -475,11 +498,11 @@ for i in range(len(NN)):
     # plt.subplot(1,2,2)
     # =============================================================================
     plt.plot(xx,pxy,'k')#,label=r"$P_{X|Y=1}$")
-    X_OT = T.forward(X,y*torch.ones(N,dy))
-    plt.hist(X_OT.detach().numpy()[:,0],bins=bins,color='r',density=True,label=r"OT", alpha = 0.5)
+    X_OT = T.forward(X,torch.full((N,dy), y, device=device))
+    plt.hist(X_OT.detach().cpu().numpy()[:,0],bins=bins,color='r',density=True,label=r"OT", alpha = 0.5)
     
 # =============================================================================
-#     plt.hist(T.forward(X,y*torch.ones(N,dy)).detach().numpy()[:,0],bins=24,color='r',density=True,label=r"OT", alpha = 0.5)
+#     plt.hist(T.forward(X,torch.full((N,dy), y, device=device)).detach().cpu().numpy()[:,0],bins=24,color='r',density=True,label=r"OT", alpha = 0.5)
 # =============================================================================
     if i==0:
         plt.legend(loc = loc)
@@ -493,23 +516,24 @@ for i in range(len(NN)):
     
     
     ###############################################################################
-    X_SIR = X #+ torch.randn(N,L) 
+    X_SIR = X.clone() #+ torch.randn(N,L) 
     y_hat = h(X_SIR).view(-1,dy)
     
-    W = torch.sum((y*torch.ones(N,dy) - y_hat)*(y*torch.ones(N,dy) - y_hat),1)/(2*gamma*gamma)
+    innovation = torch.full((N,dy), y, device=device) - y_hat
+    W = torch.sum(innovation*innovation,dim=1)/(2*gamma*gamma)
     #print(W)
     W = W - torch.min(W)
-    weight = torch.exp(-W).T
+    weight = torch.exp(-W)
     #weight = np.exp(-np.sum((y[i+1,] - h(x_SIR[k,i+1,]).T)*(y[i+1] - h(x_SIR[k,i+1,]).T),axis=1)/(2*gamma*gamma)).T
     #W[k,i+1,] = weight/np.sum(weight)
     weight = weight/torch.sum(weight)
     #x_SIR[k,i+1,0,] = rng.choice(x_SIR[k,i+1,0,], J, p = W[k,i+1,0,])
-    index = rng.choice(np.arange(N), N, p = weight.detach().numpy())
+    index = torch.multinomial(weight, N, replacement=True)
     X_sir = X_SIR[index,:]
     
     plt.subplot(grid[2, i+1])
     plt.plot(xx,pxy,'k')#,label=r"$P_{X|Y=1}$")
-    plt.hist(X_sir.detach().numpy()[:,0],bins=bins,density=True,color='b',label=r"SIR", alpha = 0.5)
+    plt.hist(X_sir.detach().cpu().numpy()[:,0],bins=bins,density=True,color='b',label=r"SIR", alpha = 0.5)
     plt.xlabel('X')
     # =============================================================================
     # plt.hist(X[:,0],bins=24,density=True,label=r"$X_0$", alpha = 0.5)
